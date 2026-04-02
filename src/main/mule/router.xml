@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <flow name="sys-sales-api-main" doc:id="413d0957-fe61-43e0-9f4a-c1aeb2e05d6f">
+        <http:listener doc:name="/api/v1/*" doc:id="5b3c8fd5-9568-4f11-9c29-ab4cca0c4f1b" config-ref="sys-sales-api-httpListenerConfig" path="/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <set-variable value="#[import substringAfter, substringBefore from dw::core::Strings&#xA;&#xA;// Parse URI&#xA;var removeBasePathAndQP = substringAfter(attributes.requestUri, p('application.base-path'))&#xA;       then (&#xA;        if ($ contains &quot;?&quot;) substringBefore($, &quot;?&quot;)&#xA;        else $&#xA;       )&#xA;var requestName = &quot;$(attributes.method) $(removeBasePathAndQP)&quot;&#xA;&#xA;output application/json&#xA;---&#xA;{&#xA; correlationId: attributes.headers.'x-root-correlation-id' default correlationId,&#xA; flowId: uuid(),&#xA; startStep: &quot;Start $(requestName) flow&quot;,&#xA; endStep: &quot;Operation on $(requestName) completed successfully&quot;,&#xA; endpoint: removeBasePathAndQP&#xA;}]" doc:name="[metadata]" doc:id="8ce350be-2224-423f-acd2-0e6c40df8d17" variableName="metadata" />
+        <logger level="INFO" doc:name="Start" doc:id="0394baa4-8856-4162-8e82-a725bbf1f0a1" message="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA;    step: vars.metadata.startStep,&#xA;    data: {&#xA;        business: attributes.queryParams ++ {},&#xA;        technical: {&#xA;            flowId: vars.metadata.flowId,&#xA;            correlationId: vars.metadata.correlationId&#xA;        }&#xA;    }&#xA;}]" category="${app.name}" />
+        <choice doc:name="heartbeat?" doc:id="26c62359-b2d6-416a-9a79-a4d956d3ff0d">
+            <when expression="#[vars.metadata.endpoint==&quot;/heartbeat&quot;]">
+                <ee:transform doc:name="Transform Message" doc:id="482e6901-38a7-4aa1-8e57-43745dd64747">
+                    <ee:message>
+                        <ee:set-payload resource="modules/Heartbeat.dwl" />
+                    </ee:message>
+                </ee:transform>
+            </when>
+            <otherwise>
+                <apikit:router doc:name="APIkit Router" doc:id="1ffe469d-9dbc-4848-9469-199675e94e14" config-ref="sys-sales-api-config" />
+                <ee:transform doc:name="Transform Message" doc:id="f82c29e4-4ba7-4268-8391-a37cfbda1f18">
+                    <ee:message>
+                        <ee:set-payload resource="modules/StandardResponse.dwl" />
+                        <ee:set-attributes resource="modules/StandardResponse.dwl" />
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+        <logger level="INFO" doc:name="End" doc:id="d7f6f98f-8d55-47b9-bfda-aaddaa0fab8d" message="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA; step: vars.metadata.endStep,&#xA; data: {&#xA;  business: {},&#xA;  technical:{&#xA;   results: payload - &quot;data&quot;&#xA;  }&#xA; }&#xA;}]" category="${app.name}" />
+    </flow>
+    <!-- [STUDIO:"METHOD:\ENDPOINT(URI):sys-sales-api-config"]<flow name="METHOD:\ENDPOINT(URI):sys-sales-api-config" doc:id="22e97f50-028e-4c91-a4b4-b35b6d078f47" /> [STUDIO] -->
+    <flow name="delete:\products\(id_product):sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id_product">attributes.uriParams.'id_product'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 404,
+  namespace: "RESOURCE_NAME",
+  identifier: "NOT_FOUND",
+  description: "product not found with id xxx"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="patch:\orders\(id_order):application\json:sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id_order">attributes.uriParams.'id_order'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="patch:\orders\(id_order):application\json:sys-sales-api-config" />
+    </flow>
+    <flow name="patch:\products\(id_product):application\json:sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id_product">attributes.uriParams.'id_product'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="patch:\products\(id_product):application\json:sys-sales-api-config" />
+    </flow>
+    <flow name="get:\customers:sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 500,
+  namespace: "APIKIT",
+  identifier: "INTERNAL_SERVER_ERROR",
+  description: "Something went wrong"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\orders:sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 500,
+  namespace: "APIKIT",
+  identifier: "INTERNAL_SERVER_ERROR",
+  description: "Something went wrong"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\customers\(id_customer)\orders:sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="id_customer">attributes.uriParams.'id_customer'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 404,
+  namespace: "RESOURCE_NAME",
+  identifier: "NOT_FOUND",
+  description: "order not found with id xxx"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\products:sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 500,
+  namespace: "APIKIT",
+  identifier: "INTERNAL_SERVER_ERROR",
+  description: "Something went wrong"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\customers:application\json:sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 400,
+  namespace: "APIKIT",
+  identifier: "BAD_REQUEST",
+  description: "Field xxx is missing"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\orders:application\json:sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 400,
+  namespace: "APIKIT",
+  identifier: "BAD_REQUEST",
+  description: "Field xxx is missing"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\products:application\json:sys-sales-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
+  statusCode: 400,
+  namespace: "APIKIT",
+  identifier: "BAD_REQUEST",
+  description: "Field xxx is missing"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

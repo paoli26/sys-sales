@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	
+
+<flow name="scheduledFlow1" doc:id="d208c4c2-01a4-4071-905b-316f4c21beb4" initialState="${schedulers.flow1.state}">
+        <scheduler doc:name="flow1" doc:id="127ab16e-2af2-411d-a4a5-4a3fe5281f88" >
+            <scheduling-strategy >
+                <cron expression="${schedulers.flow1.cron}" timeZone="${schedulers.flow1.timezone}" />
+            </scheduling-strategy>
+        </scheduler>
+        <set-variable value='#[output application/json&#10;---&#10;{&#10;    flowId: uuid(),&#10;    startStep: "[Scheduler] Start $(flow.name) flow",&#10;    endStep: "[Scheduler] End $(flow.name) flow"&#10;}]' doc:name="[metadata]" doc:id="3cb740f5-73dc-4a4b-afe3-1ceac9aca0ce" variableName="metadata" />
+        <logger level="INFO" doc:name="Start" doc:id="5cb6f155-a3d9-43e6-8746-6e28dd95f4b8" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: vars.metadata.startStep,&#10;    data: {&#10;        business: {},&#10;        technical: {&#10;            flowId: vars.metadata.flowId,&#10;            correlationId: correlationId&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+        <logger level="INFO" doc:name="Stepname" doc:id="192599b0-5153-43b5-ac72-88ebfcab6376" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: "Stepname",&#10;    data: {&#10;        business: {},&#10;        technical: {}&#10;    }&#10;}]' category="${app.name}" />
+        <!-- [STUDIO:"Flow Reference"]<flow-ref doc:name="Flow Reference" doc:id="f09e4a8a-38ac-4a7a-af51-2310527f5c8e" /> [STUDIO] -->
+        <logger level="INFO" doc:name="End" doc:id="d18c0749-45f8-4fe3-b8a9-3a5d71b6f276" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: vars.metadata.endStep,&#10;    data: {&#10;        business: {},&#10;        technical: {}&#10;    }&#10;}]" category="${app.name}" />
+    
+</flow>	
+</mule>
+	

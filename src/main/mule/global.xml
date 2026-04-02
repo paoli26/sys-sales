@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+    <http:listener-config name="sys-sales-api-httpListenerConfig" basePath="${application.base-path}">
+        <http:listener-connection host="0.0.0.0" port="${https.port}" />
+    </http:listener-config>
+    <apikit:config name="sys-sales-api-config" api="resource::29ed4528-e3f3-4e00-a045-77cbb577676c:sales-system-api:1.0.1:raml:zip:sales-system-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+	<configuration-properties doc:name="Configuration properties" doc:id="b7000260-0993-4155-a074-7b88ceb05a27" file="properties/${mule.env}-properties.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="3d430385-90af-4222-9472-2954ca7e96d7" file="properties/secure/${mule.env}-properties.yaml" key="${mule.encryptionKey}" />
+	<configuration-properties doc:name="Configuration properties" doc:id="8635019a-7b25-40c1-9308-8fe249d82481" file="properties/common-properties.yaml" />
+	<api-gateway:autodiscovery apiId="${autodiscoveryId}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="ef653773-2161-439e-9e1b-8ecce3158368" flowRef="sys-sales-api-main" />
+	<configuration doc:name="Configuration" doc:id="c3b54705-01f4-42fc-a3e7-3a558b877d94" defaultErrorHandler-ref="globalError_Handler" />
+	<sub-flow name="genericError" doc:id="747fadcc-b38e-4478-9beb-d8a9c0f9f0d1" >
+		<set-variable value='#[error.errorType.identifier match {&#10;  case "BAD_REQUEST"            -&gt; 400&#10;  case "UNAUTHORIZED"           -&gt; 401&#10;  case "FORBIDDEN"              -&gt; 403&#10;  case "NOT_FOUND"              -&gt; 404&#10;  case "METHOD_NOT_ALLOWED"     -&gt; 405&#10;  case "NOT_ACCEPTABLE"         -&gt; 406&#10;  case "CONFLICT"                -&gt; 409&#10;  case "UNSUPPORTED_MEDIA_TYPE" -&gt; 415&#10;  case "NOT_IMPLEMENTED"        -&gt; 501&#10;  else                          -&gt; error.errorMessage.attributes.statusCode default vars.httpStatus default 500&#10;}]' doc:name="[httpStatus]" doc:id="6bac1d18-bda6-4246-8b36-f49b04cfeeb2" variableName="httpStatus"/>
+		<ee:transform doc:name="Standard Error" doc:id="6e85025e-5b9b-4f71-a7fc-f82d1bd14b81" >
+			<ee:message >
+				<ee:set-payload resource="modules/StandardError.dwl" />
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Error" doc:id="84d57b7d-bf66-438e-8c4a-903fae578735" message='#[{&#10;	step: "Global error handler",&#10;	data: {&#10;		business: {},&#10;		technical: payload&#10;			}&#10;}]'/>
+	</sub-flow>
+	<error-handler name="globalError_Handler" doc:id="33bfe3db-a094-4e43-9e1e-fc24b3e6261c" >
+		<!-- [STUDIO:"On Error Propagate - Custom Error"]<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate - Custom Error" doc:id="9748bd6d-4cf6-4c3c-9d53-c8d66df50656" type="CUSTOM:ERROR">
+			<set-variable value="set description here" doc:name="[description&#93;" doc:id="00c845bd-d37a-4f73-9926-9347702c5687" variableName="description"/>
+			<set-variable value="999" doc:name="[httpStatus&#93;" doc:id="bf30e0aa-8d08-44af-bc4b-933a18d6bab7" variableName="httpStatus"/>
+			<flow-ref doc:name="Flow Reference" doc:id="d894c2f7-4ce8-4e9b-9fd3-3baf4223dfa9" name="genericError"/>
+		</on-error-propagate> [STUDIO] -->
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="9c4f4bbb-68b3-46e3-b35d-85b11b1fe897" >
+			<flow-ref doc:name="Flow Reference" doc:id="86fae412-40d7-4b7a-b9db-22a5c95f3b2a" name="genericError" />
+		</on-error-propagate>
+	</error-handler>
+
+</mule>
