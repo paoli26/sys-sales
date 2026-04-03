@@ -72,7 +72,7 @@
 		<dependency>
 			<groupId>29ed4528-e3f3-4e00-a045-77cbb577676c</groupId>
 			<artifactId>sales-system-api</artifactId>
-			<version>1.0.6</version>
+			<version>1.0.7</version>
 			<classifier>raml</classifier>
 			<type>zip</type>
 		</dependency>
