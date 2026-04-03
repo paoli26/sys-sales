@@ -52,6 +52,5 @@ WHERE email = :email]]></db:sql>
 	</sub-flow>
 	<sub-flow name="sub-customers-get-orders" doc:id="7ea38a15-8a8a-465f-a324-7e4802684a60" >
 		<logger level="INFO" doc:name="Start create products" doc:id="fd927706-2aca-4ca3-8747-77ccb32c7a8a" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Create customers&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;        	&quot;customer mail&quot; : vars.email&#10;&#10;        },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
-		<!-- [STUDIO:"Select"]<db:select doc:name="Select" doc:id="46d1662f-5552-4207-bbaa-ccdd377beea3" /> [STUDIO] -->
 	</sub-flow>
 </mule>
