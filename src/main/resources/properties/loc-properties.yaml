@@ -4,7 +4,7 @@ autodiscoveryId: "000000"
 
 # Listener
 https:
-  port: "8081"
+  port: "8086" 
 ################################
 
 system-name:
@@ -16,3 +16,13 @@ schedulers:
     state: "stopped"
     cron: "* * * * *"
     timezone: "Europe/Paris"  
+    
+db:
+  name: "paoliscake" 
+  user: "muleuser"
+  port: "3306"
+  host: "localhost"
+  pass: "muleuser2026#"
+  products_table: "products" 
+  orders_table: "orders"
+  customer_table: "customers"   

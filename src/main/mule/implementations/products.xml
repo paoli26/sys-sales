@@ -1,5 +1,174 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd"></mule>
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<sub-flow name="sub-products-get" doc:id="f3140676-0c76-457b-9bae-4a000f653b5b" >
+		<logger level="INFO" doc:name="Start Get products" doc:id="1ebb36bc-7175-49be-9c4e-419135de146a" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Get products&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        	&quot;variables&quot;: vars.id_product,&#10;        },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
+		<db:select doc:name="Retrieve Products" doc:id="21ce96a7-aa0a-48e1-94a4-bc2d8932cad0" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * From ${db.products_table}
+WHERE FIND_IN_SET(id_product, :ids)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+  "ids": vars.id_product joinBy ","
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Map to PRDM" doc:id="ff0c1f78-a543-4fe0-9d6f-21969d530c28">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map (payload, index) -> {
+    id_product: payload.id_product,
+    id_spoonacular: payload.id_spoonacular,
+    name: payload.name,
+    title: payload.title,
+    image: payload.image,
+    servings: payload.servings,
+    health_score: payload.health_score,
+    likes: payload.likes,
+    cost: payload.cost,
+    price: payload.price,
+    stock: payload.stock,
+    diet: payload.diet,
+    waiting_time: payload.waiting_time,
+    ingredients: read(payload.ingredients, "application/json"),
+    instructions: read(payload.instructions, "application/json"),
+    chef: payload.chef
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="After Retrieve Products" doc:id="8836a01a-0f5d-4ebd-bd7a-b97f65fd4dcb" message='#[%dw 2.0&#10;output application/json indent = false&#10;---&#10;{&#10;    step:"After Retrieve Products",&#10;    data: {&#10;        business: {},&#10;        technical: {&#10;        	"produits":payload,&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
+		<logger level="INFO" doc:name="End Get Products" doc:id="e42d2ea8-28ad-49e0-887e-bdc897f947a3" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Get products&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        },&#10;        technical: {&#10;        	&quot;nombre de produits&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+	<sub-flow name="Sub-products-create" doc:id="181f729c-6e7d-4ca0-9ab9-cf19ef2544bd" >
+		<set-variable value="#[payload.id_spoonacular]" doc:name="[id_spoonacular]" doc:id="0e229ed7-ae7c-4c25-bbc3-761237159b89" variableName="id_spoonacular"/>
+		<logger level="INFO" doc:name="Start Post products" doc:id="0172044b-873b-48ee-b7fc-38463d36a4e1" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start post products&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table')&#10;        },&#10;        technical: {&#10;            &quot;nb of products&quot;: sizeOf(payload),&#10;            &quot;ids_spoonacular&quot;: vars.id_spoonacular,&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+		<ee:transform doc:name="Map to PDM to insert into database" doc:id="95688854-8409-4758-aedc-58806991e819" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map (payload, index) ->{
+    id_spoonacular: payload.id_spoonacular,
+    name: payload.name,
+    title: payload.title,
+    image: payload.image,
+    servings: payload.servings,
+    health_score: payload.health_score,
+    likes: payload.likes,
+    cost: payload.cost,
+    price: payload.price,
+    stock: payload.stock,
+    diet: payload.diet ,
+    waiting_time: payload.waiting_time,
+    ingredients: write(payload.ingredients, "application/json"),
+    instructions: write(payload.instructions, "application/json"),
+    chef: payload.chef
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:bulk-insert doc:name="Create multiple products " doc:id="c84d1b38-46d6-44f4-bf61-2095ba0c7481" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO ${db.products_table} (
+    id_spoonacular, 
+    name, 
+    title, 
+    image, 
+    servings, 
+    health_score, 
+    likes, 
+    cost, 
+    price, 
+    stock, 
+    diet, 
+    waiting_time, 
+    ingredients, 
+    instructions, 
+    chef
+) VALUES (
+    :id_spoonacular, 
+    :name, 
+    :title, 
+    :image, 
+    :servings, 
+    :health_score, 
+    :likes, 
+    :cost, 
+    :price, 
+    :stock, 
+    :diet, 
+    :waiting_time, 
+    :ingredients, 
+    :instructions, 
+    :chef
+);]]></db:sql>
+		</db:bulk-insert>
+		<db:select doc:name="Recuperer les produits crées " doc:id="2e921405-64be-4abe-920f-5bbb81031587" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from ${db.products_table}
+WHERE FIND_IN_SET(id_spoonacular, :ids)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	 "ids": vars.id_spoonacular joinBy ","
+	
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Map to PRDM" doc:id="87b736b3-165f-4a89-9665-69ed5045e73d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map (payload, index) -> {
+    id_product: payload.id_product,
+    id_spoonacular: payload.id_spoonacular,
+    name: payload.name,
+    title: payload.title,
+    image: payload.image,
+    servings: payload.servings,
+    health_score: payload.health_score,
+    likes: payload.likes,
+    cost: payload.cost,
+    price: payload.price,
+    stock: payload.stock,
+    diet: payload.diet,
+    waiting_time: payload.waiting_time,
+    ingredients: read(payload.ingredients, "application/json"),
+    instructions: read(payload.instructions, "application/json"),
+    chef: payload.chef
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="End Post Products" doc:id="f203a359-c01b-4511-828c-3ed28e2c8ea0" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Post products&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        },&#10;        technical: {&#10;//        	&quot;nombre de produits&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+	<sub-flow name="sub-products-delete" doc:id="d6fdb017-4803-4ede-918d-452bc135429a" >
+		<logger level="INFO" doc:name="Start delete product" doc:id="61e6bf5a-6391-42c2-af9e-2c94eeb999cd" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: " Start delete product",&#10;   data: {&#10;        business: {&#10;        	"id_product": vars.id_product&#10;        },&#10;        technical: {&#10;       &#10;        }&#10;    }&#10;}]' category="${app.name}" />
+		<db:delete doc:name="Delete a product" doc:id="4ca0d7f3-041e-4f86-b319-573e76bbf963" config-ref="Database_Config">
+			<db:sql ><![CDATA[DELETE FROM ${db.products_table} 
+WHERE id_product = :id_product;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+    "id_product": vars.id_product
+}]]]></db:input-parameters>
+		</db:delete>
+		<validation:is-true doc:name="Produit trouvé en BDD?" doc:id="d6e5c44d-2f76-44fc-998f-1191841c5a1c" expression="#[payload &gt; 0]" message="#[&quot;Le produit &quot; ++ (vars.id_product default &quot;&quot;) ++ &quot; n'existe pas dans la Base de Données&quot;]">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<logger level="INFO" doc:name="End Delete Products" doc:id="623eb6af-edc8-4fdb-be98-a1df4d9be283" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Delete products&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        	&quot; product deleted&quot;: vars.id_product,&#10;        },&#10;        technical: {&#10;//        	&quot;nombre de produits&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+	<sub-flow name="sub_products_patch_stock" doc:id="5acc3914-6b0c-41da-bd38-16aaaeb56d2f" >
+		<logger level="INFO" doc:name="Start patch product stock" doc:id="35d937e4-9da9-4704-a9bd-9f217156481a" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: " Start patch product stock",&#10;   data: {&#10;        business: {&#10;        	"id_product": vars.id_product,&#10;        	qty: payload.quantity&#10;        },&#10;        technical: {&#10;       &#10;        }&#10;    }&#10;}]' category="${app.name}" />
+		<db:update doc:name="Update stock of a product" doc:id="435b5f37-f049-4c7c-bb59-f07c1f0cc8ca" config-ref="Database_Config">
+			<db:sql ><![CDATA[UPDATE ${db.products_table}  
+SET stock = stock -:qty 
+WHERE id_product = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+    "id": vars.id_product,
+    "qty": payload.quantity
+}]]]></db:input-parameters>
+		</db:update>
+		<validation:is-true doc:name="Produit trouvé en BDD?" doc:id="367890ca-f628-449f-b997-502d584671fa" expression="#[payload.affectedRows &gt; 0]" message="#[&quot;Le produit &quot; ++ (vars.id_product default &quot;&quot;) ++ &quot; n'existe pas dans la Base de Données&quot;]">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<logger level="INFO" doc:name="End Delete Products" doc:id="7b866380-61e1-4a28-afc7-9f11d3e18c2d" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Delete products&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        	&quot; product deleted&quot;: vars.id_product,&#10;        },&#10;        technical: {&#10;//        	&quot;nombre de produits&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+</mule>
