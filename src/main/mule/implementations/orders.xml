@@ -1,5 +1,128 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd"></mule>
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<sub-flow name="sub-orders-get-by-id" doc:id="ab9d55a6-f2f4-4b22-835a-2209ebe13b46" >
+		<logger level="INFO" doc:name="Start Get orders" doc:id="b3095b63-4615-4dd6-a327-cdfd7122e1a2" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Get orders&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.orders_table'),&#10;	&quot;order ids&quot;: vars.id_order,&#10;	         },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
+		<db:select doc:name="Retrieve order" doc:id="71ec72e4-084c-491a-b0ea-ce103256da88" config-ref="Database_Config" >
+			<db:sql ><![CDATA[SELECT 
+    o.id_order, 
+    o.id_customer, 
+    o.order_date, 
+    o.status, 
+    o.total_price,
+    oi.quantity, 
+    oi.unit_price,
+    p.id_product AS id,
+    p.id_spoonacular,
+    p.name,
+    p.title,
+    p.image,
+    p.servings,
+    p.health_score,
+    p.likes,
+    p.cost,
+    p.price,
+    p.stock,
+    p.diet,
+    p.waiting_time,
+    p.ingredients,
+    p.instructions
+FROM ${db.orders_table} o
+JOIN ${db.order_items_table} oi ON o.id_order = oi.id_order
+JOIN ${db.products_table} p ON oi.id_product = p.id_product
+WHERE o.id_order = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"id":vars.id_order as Number
+}]]]></db:input-parameters>
+		</db:select>
+		<logger level="DEBUG" doc:name="DEBUG- After Retrieve orders" doc:id="158f994b-f7dd-46db-9507-b406b0058786" message='#[%dw 2.0&#10;output application/json indent = false&#10;---&#10;{&#10;    step:"After Retrieve orders",&#10;    data: {&#10;        business: {},&#10;        technical: {&#10;        	"order":payload,&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
+		<ee:transform doc:name="Map to ORDM" doc:id="28b98cc8-17f0-41a4-b957-8f4757cdee30">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    id_order: payload[0].id_order,
+    id_customer: payload[0].id_customer,
+    orderdate: payload[0].order_date,
+    status: payload[0].status,
+    totalprice: payload[0].total_price,
+    items: payload map (item) -> {
+        quantity: item.quantity,
+        unitprice: item.unit_price,
+        product_details: {
+            id_product: item.id,
+            id_spoonacular: item.id_spoonacular,
+            name: item.name,
+            title: item.title,
+            image: item.image,
+            servings: item.servings,
+            health_score: item.health_score,
+            likes: item.likes,
+            cost: item.cost,
+            price: item.price,
+            stock: item.stock,
+            diet: item.diet,
+            waiting_time: item.waiting_time,
+            ingredients: read(item.ingredients default "[]", "application/json"),
+            instructions: read(item.instructions default "[]", "application/json")
+        }
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="End Get Orders" doc:id="1fc15e63-08ce-458b-bf07-ce5045d5be77" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Get orders&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.orders_table'),&#10;        },&#10;        technical: {&#10;        	&quot;nombre de commandes&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+	<sub-flow name="sub-orders-create" doc:id="f77625de-7fc5-4e76-8825-f0e95dece556" >
+		<set-variable value="#[payload]" doc:name="[odm]" doc:id="9984e59e-b601-453e-8ab1-7deadb485c79" variableName="odm"/>
+		<logger level="INFO" doc:name="Start create orders" doc:id="ae4f27a1-15d7-4b95-bbc2-246beb392ba9" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start create orders&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.orders_table'),&#10;	&quot;payload&quot;: payload,&#10;	         },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
+		<db:insert doc:name="Create order" doc:id="e6d36dcd-9f17-441e-879a-a39ca25c0c7b" config-ref="Database_Config" autoGenerateKeys="true" target="orderInsertionResult">
+			<db:sql ><![CDATA[INSERT INTO ${db.orders_table} (id_customer, status, total_price) 
+VALUES (:id_customer, :status, :totalprice)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+  "id_customer": vars.odm.id_customer,
+  "status": vars.odm.status,
+  "totalprice": vars.odm.totalprice
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="DEBUG- After create order" doc:id="97fa15a2-f6a6-40f1-bf9e-d12031a39f84" message='#[%dw 2.0&#10;output application/json indent = false&#10;---&#10;{&#10;    step:"After create order",&#10;    data: {&#10;        business: {&#10;        	"orderInsertionResult": vars.orderInsertionResult,&#10;        },&#10;        technical: {&#10;        	"payload":payload,&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
+		<foreach doc:name="For Each item" doc:id="01505ec6-3551-4d01-9c08-c7dfea1df469" collection="#[vars.odm.items]">
+			<db:insert doc:name="Insert into order_items" doc:id="e40eca3d-e9ec-46a8-8aea-5380e7de4056" config-ref="Database_Config">
+				<db:sql ><![CDATA[INSERT INTO ${db.order_items_table} (id_order, id_product, quantity, unit_price) 
+VALUES (:id_order, :id_prod, :qty, :price)]]></db:sql>
+				<db:input-parameters ><![CDATA[#[{
+	"id_order": vars.orderInsertionResult.generatedKeys.GENERATED_KEY,
+  "id_prod": payload.id_product,
+  "qty": payload.quantity,
+  "price": payload.unitprice
+}]]]></db:input-parameters>
+			</db:insert>
+			<logger level="INFO" doc:name="After create order_item" doc:id="b6d26bc7-d17a-4262-9756-ecd32f57cd0c" message='#[%dw 2.0&#10;output application/json &#10;---&#10;{&#10;    step:"After create order_item",&#10;    data: {&#10;        business: {&#10;        	  "id_order": vars.orderInsertionResult.generatedKeys.GENERATED_KEY,&#10;  "id_prod": vars.odm.items.id_product,&#10;  "qty": vars.odm.items.quantity,&#10;  "price": vars.odm.items.unitprice,&#10;        },&#10;        technical: {&#10;        	"payload":payload,&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
+		</foreach>
+		<set-variable value="#[vars.orderInsertionResult.generatedKeys.GENERATED_KEY]" doc:name="[id_order]" doc:id="0e9c0a66-65e4-4961-aff5-6e68d2963f53" variableName="id_order"/>
+		<flow-ref doc:name="sub-orders-get-by-id" doc:id="2433faf2-9e3d-4d69-8cd4-cec7e918b644" name="sub-orders-get-by-id"/>
+		<logger level="INFO" doc:name="End Get Orders" doc:id="41155a4b-51e0-40ab-8b5e-120ae2fbab03" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Get orders&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.orders_table'),&#10;        },&#10;        technical: {&#10;        	&quot;taille payload&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+	<sub-flow name="sub_orders_patch_status" doc:id="a7e9e466-44a7-4997-bcd0-e4ac694ed845" >
+		<logger level="INFO" doc:name="Start patch product status" doc:id="d9456195-3819-43f4-a38f-29ce9224cfd7" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: " Start patch product status",&#10;   data: {&#10;        business: {&#10;        	"new_status": payload.status,&#10;        	"id_order": vars.id_order&#10;        },&#10;        technical: {&#10;       &#10;        }&#10;    }&#10;}]' category="${app.name}" />
+		<db:update doc:name="Update statusof a product" doc:id="3b4a75b2-0ee2-4b54-8bdf-fc8eed6db1bc" config-ref="Database_Config" >
+			<db:sql ><![CDATA[UPDATE ${db.orders_table}  
+SET status = :status 
+WHERE id_order = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+    "id": vars.id_order,
+    "status": payload.status
+}]]]></db:input-parameters>
+		</db:update>
+		<validation:is-true doc:name="Produit trouvé en BDD?" doc:id="5679c2b9-59cb-4440-8c54-83216a646c89" expression="#[payload.affectedRows &gt; 0]" message="#[&quot;Le produit &quot; ++ (vars.id_product default &quot;&quot;) ++ &quot; n'existe pas dans la Base de Données&quot;]" >
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<flow-ref doc:name="sub-orders-get-by-id" doc:id="9ea8291c-c842-43d4-895a-99d0ea73a7bf" name="sub-orders-get-by-id" />
+		<logger level="INFO" doc:name="End Delete Products" doc:id="7103f0a1-bec3-4781-a060-21b7bfdad53e" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Delete products&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        	&quot; product deleted&quot;: vars.id_product,&#10;        },&#10;        technical: {&#10;//        	&quot;nombre de produits&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+</mule>
