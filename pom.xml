@@ -46,6 +46,12 @@
 				<extensions>true</extensions>
 				<configuration>
 					<classifier>mule-application</classifier>
+					<sharedLibraries>
+						<sharedLibrary>
+							<groupId>mysql</groupId>
+							<artifactId>mysql-connector-java</artifactId>
+						</sharedLibrary>
+					</sharedLibraries>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -53,9 +59,20 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.mule.connectors</groupId>
+			<artifactId>mule-db-connector</artifactId>
+			<version>1.15.0</version>
+			<classifier>mule-plugin</classifier>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.30</version>
+		</dependency>
+		<dependency>
 			<groupId>29ed4528-e3f3-4e00-a045-77cbb577676c</groupId>
 			<artifactId>sales-system-api</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.6</version>
 			<classifier>raml</classifier>
 			<type>zip</type>
 		</dependency>
