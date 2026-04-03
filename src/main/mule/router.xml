@@ -38,12 +38,8 @@
         <flow-ref doc:name="sub-products-delete" doc:id="e9f6c241-554a-4264-add7-a7293f622434" name="sub-products-delete" />
     </flow>
     <flow name="patch:\orders\(id_order):application\json:sys-sales-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id_order">attributes.uriParams.'id_order'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <logger level="INFO" message="patch:\orders\(id_order):application\json:sys-sales-api-config" />
+        <set-variable value="#[attributes.uriParams.'id_order']" doc:name="[id_order]" doc:id="937b53e6-2ae9-42f8-a2ff-519247b6a2d0" variableName="id_order"/>
+		<flow-ref doc:name="sub_orders_patch_status" doc:id="ce6f3a31-e23d-4314-a6b5-9e417033d4b8" name="sub_orders_patch_status"/>
     </flow>
     <flow name="patch:\products\(id_product):application\json:sys-sales-api-config">
         <set-variable value="#[attributes.uriParams.'id_product']" doc:name="[id_product]" doc:id="c8e1de13-ba87-4c28-ad70-b91c06429365" variableName="id_product" />
@@ -75,26 +71,12 @@ output application/json
     <flow name="get:\products:sys-sales-api-config">
         <set-variable value="#[(attributes.queryParams.*id_product) map ($ as Number)]" doc:name="[id_product]" doc:id="34b1029b-aeed-4c2a-b149-319958c28543" variableName="id_product" />
         <flow-ref doc:name="sub-products-get" doc:id="7855223a-f775-4414-b7e0-4b16dbcc32bd" name="sub-products-get" />
-        <!-- [STUDIO:"[id_product]1"]<set-variable value="#[attributes.queryParams.*'id_product'&#93;" doc:name="[id_product&#93;1" doc:id="704049e9-b852-44b1-80f3-34357767b04b" variableName="id_product" /> [STUDIO] -->
     </flow>
     <flow name="post:\customers:application\json:sys-sales-api-config">
         <flow-ref doc:name="sub-customers-create" doc:id="e487c445-9f6a-45f4-a786-bef30fb3d509" name="sub-customers-create" />
     </flow>
     <flow name="post:\orders:application\json:sys-sales-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
-  statusCode: 400,
-  namespace: "APIKIT",
-  identifier: "BAD_REQUEST",
-  description: "Field xxx is missing"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+        <flow-ref doc:name="sub-orders-create" doc:id="e0b89b5f-dde4-4e4b-be2e-d3fa5461de14" name="sub-orders-create"/>
     </flow>
     <flow name="post:\products:application\json:sys-sales-api-config">
         <flow-ref doc:name="Sub-products-create" doc:id="22e70c48-0aaf-4614-b713-f0e4316642f5" name="Sub-products-create" />
@@ -104,35 +86,11 @@ output application/json
 		<flow-ref doc:name="sub-customers-get-by-id" doc:id="ee68e271-3098-4721-8ab7-4c792c20f5c5" name="sub-customers-get-by-id"/>
     </flow>
     <flow name="get:\orders\(id_order):sys-sales-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id_order">attributes.uriParams.'id_order'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
-  statusCode: 500,
-  namespace: "APIKIT",
-  identifier: "INTERNAL_SERVER_ERROR",
-  description: "Something went wrong"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+        <set-variable value="#[attributes.uriParams.'id_order']" doc:name="[id_order]" doc:id="b4968990-09ba-49a2-83f8-510003653a45" variableName="id_order"/>
+		<flow-ref doc:name="sub-orders-get-by-id" doc:id="130f810b-4ead-41b8-a3a0-8a644547de16" name="sub-orders-get-by-id"/>
     </flow>
     <flow name="get:\products\(id_product):sys-sales-api-config">
-        <ee:transform doc:name="Transform Message" doc:id="d76e26fa-28b2-4300-805f-9327eb464cfb">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/java
----
-{
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+        <set-variable value="#[[attributes.uriParams.'id_product']]" doc:name="[id_product]" doc:id="e71cd430-165a-4741-bb4e-8c7d356fe3a3" variableName="id_product"/>
+		<flow-ref doc:name="sub-products-get" doc:id="5926f087-d727-47c0-8872-ee04e67bb214" name="sub-products-get"/>
     </flow>
 </mule>
