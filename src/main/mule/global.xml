@@ -3,7 +3,7 @@
     <http:listener-config name="sys-sales-api-httpListenerConfig" basePath="${application.base-path}">
         <http:listener-connection host="0.0.0.0" port="${https.port}" />
     </http:listener-config>
-    <apikit:config name="sys-sales-api-config" api="resource::29ed4528-e3f3-4e00-a045-77cbb577676c:sales-system-api:1.0.6:raml:zip:sales-system-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <apikit:config name="sys-sales-api-config" api="resource::29ed4528-e3f3-4e00-a045-77cbb577676c:sales-system-api:1.0.7:raml:zip:sales-system-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <configuration-properties doc:name="Configuration properties" doc:id="b7000260-0993-4155-a074-7b88ceb05a27" file="properties/${mule.env}-properties.yaml" />
     <secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="3d430385-90af-4222-9472-2954ca7e96d7" file="properties/secure/${mule.env}-properties.yaml" key="${mule.encryptionKey}" />
     <configuration-properties doc:name="Configuration properties" doc:id="8635019a-7b25-40c1-9308-8fe249d82481" file="properties/common-properties.yaml" />

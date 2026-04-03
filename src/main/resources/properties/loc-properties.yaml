@@ -25,4 +25,4 @@ db:
   pass: "muleuser2026#"
   products_table: "products" 
   orders_table: "orders"
-  customer_table: "customers"   
+  customers_table: "customers"   

@@ -1,5 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd"></mule>
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="sub-customers-get" doc:id="52150b7c-b360-4b18-befe-07bdb3ed1c9a" >
+		<logger level="INFO" doc:name="Start Get customers" doc:id="0cb4db05-edc6-48f7-89ce-4e1b252933de" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Get customers&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;&#10;        },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
+		<db:select doc:name="Retrieve Customers" doc:id="f634271a-1866-4a08-97ba-54948581be6e" config-ref="Database_Config" >
+			<db:sql ><![CDATA[select * From ${db.customers_table}
+]]></db:sql>
+		</db:select>
+		<logger level="INFO" doc:name="After Retrieve customers" doc:id="69261738-3996-4659-9f5f-4c137aaa2a89" message='#[%dw 2.0&#10;output application/json indent = false&#10;---&#10;{&#10;    step:"After Retrieve customers",&#10;    data: {&#10;        business: {},&#10;        technical: {&#10;        	"customers":payload,&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
+		<logger level="INFO" doc:name="End Get Customers" doc:id="db090dd5-2798-49f5-99b8-ac6704a59f48" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Get customers&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;        },&#10;        technical: {&#10;        	&quot;nombre de clients&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+	<sub-flow name="sub-customers-create" doc:id="d7fd0227-8343-400c-9692-81ae3a10412c" >
+		<set-variable value="#[payload.email]" doc:name="[email]" doc:id="c33b5e06-eafb-4853-9440-8a8bef97278d" variableName="email"/>
+		<logger level="INFO" doc:name="Start create products" doc:id="e73198f9-e82f-4667-b356-634d192b459f" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Create customers&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;        	&quot;customer mail&quot; : vars.email&#10;&#10;        },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
+		<db:insert doc:name="Create a customer" doc:id="31ba7062-9f82-4cc6-bb37-d8b0a1ec6ab8" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO ${db.customers_table}  (firstname, lastname, email, phone, diet) 
+VALUES (:firstname, :lastname, :email, :phone, :diet)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+  "firstname": payload.firstname,
+  "lastname": payload.lastname,
+  "email": payload.email,
+  "phone": payload.phone,
+  "diet": payload.diet
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="DEBUG" doc:name="DEBUG-After create customers" doc:id="bf5a5146-5155-45dd-a22c-2e592b434c1b" message='#[%dw 2.0&#10;output application/json indent = false&#10;---&#10;{&#10;    step:"After create customers",&#10;    data: {&#10;        business: {},&#10;        technical: {&#10;        	"payload":payload,&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
+		<db:select doc:name="Retrieve Products" doc:id="b0e6fbcd-afbd-4efa-b4be-94748a3e3f5b" config-ref="Database_Config">
+			<db:sql><![CDATA[select * From ${db.customers_table}
+WHERE email = :email]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+    "email": vars.email
+}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="End Get Products" doc:id="664f085c-424e-4ed4-87d5-ad24eae6447c" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Get customers&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;        },&#10;        technical: {&#10;        	&quot;nombre de clients&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+	<sub-flow name="sub-customers-get-by-id" doc:id="e6410cbc-363a-47aa-a18e-cf59024bda4b" >
+		<logger level="INFO" doc:name="Start Get customers" doc:id="df65f82e-26c4-4076-bf01-bf07693acbd9" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Get customers&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;	&quot;customer id&quot;: vars.id_customer,&#10;	         },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
+		<db:select doc:name="Retrieve one customer" doc:id="ecfb7a40-f2d5-438a-b1fe-429e47cdc2b6" config-ref="Database_Config" >
+			<db:sql ><![CDATA[select * From ${db.customers_table}
+ WHERE id_customer = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"id":vars.id_customer
+}]]]></db:input-parameters>
+		</db:select>
+		<logger level="DEBUG" doc:name="DEBUG- After Retrieve customers" doc:id="aa8a43e6-5d3f-4148-8572-a21556386e37" message='#[%dw 2.0&#10;output application/json indent = false&#10;---&#10;{&#10;    step:"After Retrieve customers",&#10;    data: {&#10;        business: {},&#10;        technical: {&#10;        	"customer":payload,&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
+		<logger level="INFO" doc:name="End Get Customer" doc:id="f074ffc4-3f1c-4103-a6a8-0c5a49e24185" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Get customer&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;        },&#10;        technical: {&#10;        	&quot;customer retrieve&quot;: payload.id_customer,&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+	</sub-flow>
+	<sub-flow name="sub-customers-get-orders" doc:id="7ea38a15-8a8a-465f-a324-7e4802684a60" >
+		<logger level="INFO" doc:name="Start create products" doc:id="fd927706-2aca-4ca3-8747-77ccb32c7a8a" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Create customers&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;        	&quot;customer mail&quot; : vars.email&#10;&#10;        },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
+		<!-- [STUDIO:"Select"]<db:select doc:name="Select" doc:id="46d1662f-5552-4207-bbaa-ccdd377beea3" /> [STUDIO] -->
+	</sub-flow>
+</mule>

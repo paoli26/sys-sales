@@ -16,6 +16,9 @@ WHERE FIND_IN_SET(id_product, :ids)]]></db:sql>
   "ids": vars.id_product joinBy ","
 }]]]></db:input-parameters>
 		</db:select>
+		<validation:is-true doc:name="Produit trouvé en BDD?" doc:id="a6dfae27-cfbd-4bb5-8f40-c3a3e0311d81" expression="#[sizeOf(payload) == sizeOf(vars.id_product)]" message="#[&quot;L'un des produits recherché  n'existe pas dans la Base de Données&quot;]">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
 		<ee:transform doc:name="Map to PRDM" doc:id="ff0c1f78-a543-4fe0-9d6f-21969d530c28">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
