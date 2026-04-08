@@ -38,8 +38,8 @@
         <flow-ref doc:name="sub-products-delete" doc:id="e9f6c241-554a-4264-add7-a7293f622434" name="sub-products-delete" />
     </flow>
     <flow name="patch:\orders\(id_order):application\json:sys-sales-api-config">
-        <set-variable value="#[attributes.uriParams.'id_order']" doc:name="[id_order]" doc:id="937b53e6-2ae9-42f8-a2ff-519247b6a2d0" variableName="id_order"/>
-		<flow-ref doc:name="sub_orders_patch_status" doc:id="ce6f3a31-e23d-4314-a6b5-9e417033d4b8" name="sub_orders_patch_status"/>
+        <set-variable value="#[attributes.uriParams.'id_order']" doc:name="[id_order]" doc:id="937b53e6-2ae9-42f8-a2ff-519247b6a2d0" variableName="id_order" />
+        <flow-ref doc:name="sub_orders_patch_status" doc:id="ce6f3a31-e23d-4314-a6b5-9e417033d4b8" name="sub_orders_patch_status" />
     </flow>
     <flow name="patch:\products\(id_product):application\json:sys-sales-api-config">
         <set-variable value="#[attributes.uriParams.'id_product']" doc:name="[id_product]" doc:id="c8e1de13-ba87-4c28-ad70-b91c06429365" variableName="id_product" />
@@ -49,24 +49,11 @@
         <flow-ref doc:name="sub-customers-get" doc:id="579a0ae2-08e1-4037-a7b5-7aefc1f9956d" name="sub-customers-get" />
     </flow>
     <flow name="get:\orders:sys-sales-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  correlationId: "fe5zef1-194b-475c-8dee-0zef56zf4180",
-  statusCode: 500,
-  namespace: "APIKIT",
-  identifier: "INTERNAL_SERVER_ERROR",
-  description: "Something went wrong"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+        <flow-ref doc:name="sub-orders-get" doc:id="66897c75-7ab9-447b-8bd0-66e838b9c25e" name="sub-orders-get" />
     </flow>
     <flow name="get:\customers\(id_customer)\orders:sys-sales-api-config">
-        <set-variable value="#[attributes.uriParams.'id_customer']" doc:name="[id_customer]" doc:id="f4ed2eab-29f7-4b7a-a7c2-4bd5101a7a0e" variableName="id_customer"/>
-		<flow-ref doc:name="sub-customers-get-orders" doc:id="606e9c1a-6fe2-472b-bddf-19000d159da5" name="sub-customers-get-orders"/>
+        <set-variable value="#[attributes.uriParams.'id_customer']" doc:name="[id_customer]" doc:id="f4ed2eab-29f7-4b7a-a7c2-4bd5101a7a0e" variableName="id_customer" />
+        <flow-ref doc:name="sub-customers-get-orders" doc:id="606e9c1a-6fe2-472b-bddf-19000d159da5" name="sub-customers-get-orders" />
     </flow>
     <flow name="get:\products:sys-sales-api-config">
         <set-variable value="#[(attributes.queryParams.*id_product) map ($ as Number)]" doc:name="[id_product]" doc:id="34b1029b-aeed-4c2a-b149-319958c28543" variableName="id_product" />
@@ -76,21 +63,21 @@ output application/json
         <flow-ref doc:name="sub-customers-create" doc:id="e487c445-9f6a-45f4-a786-bef30fb3d509" name="sub-customers-create" />
     </flow>
     <flow name="post:\orders:application\json:sys-sales-api-config">
-        <flow-ref doc:name="sub-orders-create" doc:id="e0b89b5f-dde4-4e4b-be2e-d3fa5461de14" name="sub-orders-create"/>
+        <flow-ref doc:name="sub-orders-create" doc:id="e0b89b5f-dde4-4e4b-be2e-d3fa5461de14" name="sub-orders-create" />
     </flow>
     <flow name="post:\products:application\json:sys-sales-api-config">
         <flow-ref doc:name="Sub-products-create" doc:id="22e70c48-0aaf-4614-b713-f0e4316642f5" name="Sub-products-create" />
     </flow>
     <flow name="get:\customers\(id_customer):sys-sales-api-config">
-        <set-variable value="#[attributes.uriParams.'id_customer']" doc:name="[id_customer]" doc:id="8b26d7ea-3d49-4b19-b8b5-f8e9f0e1a757" variableName="id_customer"/>
-		<flow-ref doc:name="sub-customers-get-by-id" doc:id="ee68e271-3098-4721-8ab7-4c792c20f5c5" name="sub-customers-get-by-id"/>
+        <set-variable value="#[attributes.uriParams.'id_customer']" doc:name="[id_customer]" doc:id="8b26d7ea-3d49-4b19-b8b5-f8e9f0e1a757" variableName="id_customer" />
+        <flow-ref doc:name="sub-customers-get-by-id" doc:id="ee68e271-3098-4721-8ab7-4c792c20f5c5" name="sub-customers-get-by-id" />
     </flow>
     <flow name="get:\orders\(id_order):sys-sales-api-config">
-        <set-variable value="#[attributes.uriParams.'id_order']" doc:name="[id_order]" doc:id="b4968990-09ba-49a2-83f8-510003653a45" variableName="id_order"/>
-		<flow-ref doc:name="sub-orders-get-by-id" doc:id="130f810b-4ead-41b8-a3a0-8a644547de16" name="sub-orders-get-by-id"/>
+        <set-variable value="#[attributes.uriParams.'id_order']" doc:name="[id_order]" doc:id="b4968990-09ba-49a2-83f8-510003653a45" variableName="id_order" />
+        <flow-ref doc:name="sub-orders-get-by-id" doc:id="130f810b-4ead-41b8-a3a0-8a644547de16" name="sub-orders-get-by-id" />
     </flow>
     <flow name="get:\products\(id_product):sys-sales-api-config">
-        <set-variable value="#[[attributes.uriParams.'id_product']]" doc:name="[id_product]" doc:id="e71cd430-165a-4741-bb4e-8c7d356fe3a3" variableName="id_product"/>
-		<flow-ref doc:name="sub-products-get" doc:id="5926f087-d727-47c0-8872-ee04e67bb214" name="sub-products-get"/>
+        <set-variable value="#[[attributes.uriParams.'id_product']]" doc:name="[id_product]" doc:id="e71cd430-165a-4741-bb4e-8c7d356fe3a3" variableName="id_product" />
+        <flow-ref doc:name="sub-products-get" doc:id="5926f087-d727-47c0-8872-ee04e67bb214" name="sub-products-get" />
     </flow>
 </mule>

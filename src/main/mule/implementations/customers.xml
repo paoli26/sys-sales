@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
-	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
 	<sub-flow name="sub-customers-get" doc:id="52150b7c-b360-4b18-befe-07bdb3ed1c9a" >
 		<logger level="INFO" doc:name="Start Get customers" doc:id="0cb4db05-edc6-48f7-89ce-4e1b252933de" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Get customers&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;&#10;        },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
 		<db:select doc:name="Retrieve Customers" doc:id="f634271a-1866-4a08-97ba-54948581be6e" config-ref="Database_Config" >
@@ -18,6 +19,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<set-variable value="#[payload.email]" doc:name="[email]" doc:id="c33b5e06-eafb-4853-9440-8a8bef97278d" variableName="email"/>
 		<logger level="INFO" doc:name="Start create products" doc:id="e73198f9-e82f-4667-b356-634d192b459f" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Create customers&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;        	&quot;customer mail&quot; : vars.email&#10;&#10;        },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
 		<db:insert doc:name="Create a customer" doc:id="31ba7062-9f82-4cc6-bb37-d8b0a1ec6ab8" config-ref="Database_Config">
+			<error-mapping sourceType="DB:QUERY_EXECUTION" targetType="APP:NOT_ACCEPTABLE" />
 			<db:sql ><![CDATA[INSERT INTO ${db.customers_table}  (firstname, lastname, email, phone, diet) 
 VALUES (:firstname, :lastname, :email, :phone, :diet)]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{
@@ -29,7 +31,7 @@ VALUES (:firstname, :lastname, :email, :phone, :diet)]]></db:sql>
 }]]]></db:input-parameters>
 		</db:insert>
 		<logger level="DEBUG" doc:name="DEBUG-After create customers" doc:id="bf5a5146-5155-45dd-a22c-2e592b434c1b" message='#[%dw 2.0&#10;output application/json indent = false&#10;---&#10;{&#10;    step:"After create customers",&#10;    data: {&#10;        business: {},&#10;        technical: {&#10;        	"payload":payload,&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
-		<db:select doc:name="Retrieve Products" doc:id="b0e6fbcd-afbd-4efa-b4be-94748a3e3f5b" config-ref="Database_Config">
+		<db:select doc:name="Retrieve customer created " doc:id="b0e6fbcd-afbd-4efa-b4be-94748a3e3f5b" config-ref="Database_Config">
 			<db:sql><![CDATA[select * From ${db.customers_table}
 WHERE email = :email]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{
@@ -48,76 +50,27 @@ WHERE email = :email]]></db:sql>
 }]]]></db:input-parameters>
 		</db:select>
 		<logger level="DEBUG" doc:name="DEBUG- After Retrieve customers" doc:id="aa8a43e6-5d3f-4148-8572-a21556386e37" message='#[%dw 2.0&#10;output application/json indent = false&#10;---&#10;{&#10;    step:"After Retrieve customers",&#10;    data: {&#10;        business: {},&#10;        technical: {&#10;        	"customer":payload,&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
+		<validation:is-not-empty-collection doc:name="Le client existe en BDD?" doc:id="07f5f799-cb4a-4bcb-b585-8be822bb3fca" message="Le client  recherché n'existe pas en base de données">
+			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
+		</validation:is-not-empty-collection>
 		<logger level="INFO" doc:name="End Get Customer" doc:id="f074ffc4-3f1c-4103-a6a8-0c5a49e24185" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Get customer&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.customers_table'),&#10;        },&#10;        technical: {&#10;        	&quot;customer retrieve&quot;: payload.id_customer,&#10;        }&#10;    }&#10;}]" category="${app.name}" />
 	</sub-flow>
 	<sub-flow name="sub-customers-get-orders" doc:id="7ea38a15-8a8a-465f-a324-7e4802684a60" >
 		<logger level="INFO" doc:name="Start Get customer orders" doc:id="dc964d4a-e8c6-4579-a866-cca08648f899" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Get customers orders&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.orders_table'),&#10;	&quot;customer ids&quot;: vars.id_customer,&#10;	         },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
 		<db:select doc:name="Retrieve customer orders" doc:id="a20077c8-d607-48e5-bb8b-bd4f64daa7a6" config-ref="Database_Config" >
-			<db:sql ><![CDATA[SELECT 
-    o.id_order, 
-    o.id_customer, 
-    o.order_date, 
-    o.status, 
-    o.total_price,
-    oi.quantity, 
-    oi.unit_price,
-    p.id_product AS id,
-    p.id_spoonacular,
-    p.name,
-    p.title,
-    p.image,
-    p.servings,
-    p.health_score,
-    p.likes,
-    p.cost,
-    p.price,
-    p.stock,
-    p.diet,
-    p.waiting_time,
-    p.ingredients,
-    p.instructions
-FROM ${db.orders_table} o
-JOIN ${db.order_items_table} oi ON o.id_order = oi.id_order
-JOIN ${db.products_table} p ON oi.id_product = p.id_product
-WHERE o.id_customer = :id]]></db:sql>
+			<db:sql ><![CDATA[select * from ${db.orders_table} 
+WHere id_customer = :id]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{
 	"id":vars.id_customer as Number
 }]]]></db:input-parameters>
 		</db:select>
 		<logger level="DEBUG" doc:name="DEBUG- After Retrieve orders" doc:id="4e0375a9-1f9e-475d-adc8-be132de457ec" message='#[%dw 2.0&#10;output application/json indent = false&#10;---&#10;{&#10;    step:"After Retrieve orders",&#10;    data: {&#10;        business: {},&#10;        technical: {&#10;        	"id customer":vars.id_customer,&#10;        	"order": payload&#10;        }&#10;    }&#10;  }]' category="${app.name}" />
-		<ee:transform doc:name="Map to ORDM" doc:id="a90932de-2785-4212-8a98-c80b188db4c7" >
+		<ee:transform doc:name="Map to simple order data Model" doc:id="cd74f258-faeb-4db7-8b3d-f72e61529e25" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-{
-    id_order: payload[0].id_order,
-    id_customer: payload[0].id_customer,
-    orderdate: payload[0].order_date,
-    status: payload[0].status,
-    totalprice: payload[0].total_price,
-    items: payload map (item) -> {
-        quantity: item.quantity,
-        unitprice: item.unit_price,
-        product_details: {
-            id_product: item.id,
-            id_spoonacular: item.id_spoonacular,
-            name: item.name,
-            title: item.title,
-            image: item.image,
-            servings: item.servings,
-            health_score: item.health_score,
-            likes: item.likes,
-            cost: item.cost,
-            price: item.price,
-            stock: item.stock,
-            diet: item.diet,
-            waiting_time: item.waiting_time,
-            ingredients: read(item.ingredients default "[]", "application/json"),
-            instructions: read(item.instructions default "[]", "application/json")
-        }
-    }
-}]]></ee:set-payload>
+payload map (item) -> item - "id_customer"]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<logger level="INFO" doc:name="End Get Orders" doc:id="9919270d-958a-4a45-9779-7c892a42a54d" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Get orders&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.orders_table'),&#10;        },&#10;        technical: {&#10;        	&quot;id_customer&quot;: vars.id_customer,&#10;        	&quot;id_order&quot;: payload.id_order&#10;        }&#10;    }&#10;}]" category="${app.name}" />

@@ -11,12 +11,12 @@ http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mu
 		<logger level="INFO" doc:name="Start Get products" doc:id="1ebb36bc-7175-49be-9c4e-419135de146a" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step: &quot; Start Get products&quot;,&#10;   data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        	&quot;variables&quot;: vars.id_product,&#10;        },&#10;        technical: {&#10;            &#10;        }&#10;    }&#10;}]" category="${app.name}" />
 		<db:select doc:name="Retrieve Products" doc:id="21ce96a7-aa0a-48e1-94a4-bc2d8932cad0" config-ref="Database_Config">
 			<db:sql ><![CDATA[select * From ${db.products_table}
-WHERE FIND_IN_SET(id_product, :ids)]]></db:sql>
+WHERE (:ids = '' OR FIND_IN_SET(id_product, :ids))]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{
-  "ids": vars.id_product joinBy ","
+  "ids": (vars.id_product default []) joinBy ","
 }]]]></db:input-parameters>
 		</db:select>
-		<validation:is-true doc:name="Produit trouvé en BDD?" doc:id="a6dfae27-cfbd-4bb5-8f40-c3a3e0311d81" expression="#[sizeOf(payload) == sizeOf(vars.id_product)]" message="#[&quot;L'un des produits recherché  n'existe pas dans la Base de Données&quot;]">
+		<validation:is-true doc:name="Produit trouvé en BDD?" doc:id="a6dfae27-cfbd-4bb5-8f40-c3a3e0311d81" expression="#[ if (vars.id_product != null)  (sizeOf(payload) == sizeOf(vars.id_product)) else true]" message="#[&quot;L'un des produits recherché  n'existe pas dans la Base de Données&quot;]">
 			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
 		</validation:is-true>
 		<ee:transform doc:name="Map to PRDM" doc:id="ff0c1f78-a543-4fe0-9d6f-21969d530c28">
@@ -109,39 +109,7 @@ payload map (payload, index) ->{
     :chef
 );]]></db:sql>
 		</db:bulk-insert>
-		<db:select doc:name="Recuperer les produits crées " doc:id="2e921405-64be-4abe-920f-5bbb81031587" config-ref="Database_Config">
-			<db:sql ><![CDATA[select * from ${db.products_table}
-WHERE FIND_IN_SET(id_spoonacular, :ids)]]></db:sql>
-			<db:input-parameters ><![CDATA[#[{
-	 "ids": vars.id_spoonacular joinBy ","
-	
-}]]]></db:input-parameters>
-		</db:select>
-		<ee:transform doc:name="Map to PRDM" doc:id="87b736b3-165f-4a89-9665-69ed5045e73d">
-			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-payload map (payload, index) -> {
-    id_product: payload.id_product,
-    id_spoonacular: payload.id_spoonacular,
-    name: payload.name,
-    title: payload.title,
-    image: payload.image,
-    servings: payload.servings,
-    health_score: payload.health_score,
-    likes: payload.likes,
-    cost: payload.cost,
-    price: payload.price,
-    stock: payload.stock,
-    diet: payload.diet,
-    waiting_time: payload.waiting_time,
-    ingredients: read(payload.ingredients, "application/json"),
-    instructions: read(payload.instructions, "application/json"),
-    chef: payload.chef
-}]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+		<set-payload value="Products created successfully" doc:name="Set Message Response" doc:id="8ed69472-3ba4-4835-81bc-f7d73918f7aa" />
 		<logger level="INFO" doc:name="End Post Products" doc:id="f203a359-c01b-4511-828c-3ed28e2c8ea0" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Post products&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        },&#10;        technical: {&#10;//        	&quot;nombre de produits&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
 	</sub-flow>
 	<sub-flow name="sub-products-delete" doc:id="d6fdb017-4803-4ede-918d-452bc135429a" >
@@ -172,6 +140,7 @@ WHERE id_product = :id]]></db:sql>
 		<validation:is-true doc:name="Produit trouvé en BDD?" doc:id="367890ca-f628-449f-b997-502d584671fa" expression="#[payload.affectedRows &gt; 0]" message="#[&quot;Le produit &quot; ++ (vars.id_product default &quot;&quot;) ++ &quot; n'existe pas dans la Base de Données&quot;]">
 			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
 		</validation:is-true>
-		<logger level="INFO" doc:name="End Delete Products" doc:id="7b866380-61e1-4a28-afc7-9f11d3e18c2d" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End Delete products&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        	&quot; product deleted&quot;: vars.id_product,&#10;        },&#10;        technical: {&#10;//        	&quot;nombre de produits&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
+		<set-payload value="Product stock modified successfully" doc:name="Set Message Response" doc:id="a2adc712-53df-41cb-bd99-ee588772c591" />
+		<logger level="INFO" doc:name="End update product stock" doc:id="7b866380-61e1-4a28-afc7-9f11d3e18c2d" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;    step:&quot;End update product stock&quot;,&#10;    data: {&#10;        business: {&#10;        	&quot;table&quot;: p('db.products_table'),&#10;        	&quot; product&quot;: vars.id_product,&#10;        },&#10;        technical: {&#10;//        	&quot;nombre de produits&quot;: sizeOf(payload),&#10;        }&#10;    }&#10;}]" category="${app.name}" />
 	</sub-flow>
 </mule>

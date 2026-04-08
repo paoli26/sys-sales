@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="con" path="org.mule.tooling.API_SPEC_LIB/29ed4528-e3f3-4e00-a045-77cbb577676c/sales-system-api/1.0.7"/>
+	<classpathentry kind="con" path="org.mule.tooling.API_SPEC_LIB/29ed4528-e3f3-4e00-a045-77cbb577676c/sales-system-api/1.0.10"/>
 	<classpathentry kind="con" path="org.mule.tooling.MULE_PROJECT_LIB"/>
 	<classpathentry kind="con" path="MULE_LIB/org.mule.connectors/mule-db-connector/1.15.0"/>
 	<classpathentry kind="con" path="MULE_LIB/org.mule.modules/mule-apikit-module/1.10.4"/>
